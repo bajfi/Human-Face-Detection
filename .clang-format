@@ -1,0 +1,96 @@
+---
+# Language and Standard
+Language: Cpp                       # Specifies that this is for C++ code
+Standard: Latest                    # Use the latest C++ standard features
+
+# Base Style and Indentation
+BasedOnStyle: Microsoft            # Use Microsoft's style as a base
+IndentWidth: 4                     # Use 4 spaces for indentation
+TabWidth: 2                        # Use 2 spaces for tab width
+UseTab: Never                      # Always use spaces instead of tabs
+AccessModifierOffset: -2           # Indent access modifiers (public, private) relative to class declaration
+NamespaceIndentation: None         # Don't indent inside namespaces
+
+# Alignment and Formatting
+ColumnLimit: 80                     # Maximum line length
+AlignConsecutiveAssignments: false  # Align consecutive assignments
+AlignConsecutiveDeclarations: false # Align consecutive declarations
+AlignOperands: Align                # Align operands
+DerivePointerAlignment: false       # Don't derive pointer alignment from base style
+PointerAlignment: Left              # Place asterisk next to type (int* ptr)
+ReferenceAlignment: Left            # Place ampersand next to type (int& ref)
+
+# Function and Control Statements
+AllowShortFunctionsOnASingleLine: Empty     # Each function gets multiple lines
+AllowShortLambdasOnASingleLine: Empty       # Allow short lambdas on a single line
+AllowShortBlocksOnASingleLine: false        # Each block gets multiple lines
+AllowShortCaseLabelsOnASingleLine: false    # Case labels on separate lines
+AllowShortIfStatementsOnASingleLine: false  # If statements on multiple lines
+AllowShortLoopsOnASingleLine: false         # Loops on multiple lines
+BinPackArguments: false                     # One argument per line in function calls
+BinPackParameters: false                    # One parameter per line in function declarations
+
+# Spacing
+SpaceAfterCStyleCast: true                    # Space after C-style cast
+SpaceAfterTemplateKeyword: true               # Space after template keyword
+SpaceBeforeParens: ControlStatements          # Space before parentheses in control statements
+SpaceInEmptyParentheses: false                # No spaces in empty parentheses
+SpacesInCStyleCastParentheses: false          # No spaces in C-style cast parentheses
+SpacesInParentheses: false                    # No spaces inside parentheses
+
+# Includes and Namespaces
+SortIncludes: false                      # Sort include statements
+IncludeBlocks: Preserve                 # Preserve include blocks
+SortUsingDeclarations: Lexicographic    # Sort using declarations lexicographically
+CompactNamespaces: false                # Don't compact namespaces
+
+# Comments
+FixNamespaceComments: true        # Add namespace name in closing comment
+ReflowComments: true              # Reflow comment text
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 2
+
+# Classes and Functions
+ConstructorInitializerAllOnOneLineOrOnePerLine: true # Constructor initializer list formatting
+BreakConstructorInitializers: BeforeColon            # Break constructor initializers before colons
+KeepEmptyLinesAtTheStartOfBlocks: false              # Remove empty lines at start of block
+SeparateDefinitionBlocks: Always                     # Separate definition blocks
+
+BreakBeforeTemplateCloser: true     # Break before template closer
+BreakTemplateDeclarations: Yes      # Break template declarations
+BreakAdjacentStringLiterals: true   # Break adjacent string literals
+BreakStringLiterals: true           # Break string literals
+
+AlignAfterOpenBracket: BlockIndent
+BracedInitializerIndentWidth: 2
+
+ContinuationIndentWidth: 2
+ConstructorInitializerIndentWidth: 2
+
+LambdaBodyIndentation: Signature  # Lambda body indentation
+
+BreakBeforeBraces: Custom  # Break before braces
+BraceWrapping:
+  AfterEnum: true             # After enum
+  AfterStruct: true           # After struct
+  AfterClass: true            # After class
+  AfterFunction: true         # After function
+  AfterNamespace: true        # After namespace
+  AfterInterface: true        # After interface
+  AfterModule: true           # After module
+  AfterUnion: true            # After union
+  BeforeLambdaBody: true      # Before lambda body
+  SplitEmptyFunction: false   # Split empty function
+  SplitEmptyRecord: false     # Split empty record
+  SplitEmptyNamespace: false  # Split empty namespace
+  IndentBraces: false
+
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: Always
+MaxEmptyLinesToKeep: 1
+RemoveEmptyLinesInUnwrappedLines: true
+KeepEmptyLines:
+  AtEndOfFile: true
+  AtStartOfBlock: false
+  AtStartOfFile: false
