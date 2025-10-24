@@ -947,23 +947,40 @@ QString FaceDetectionWindow::getModelFilterString() const
 
 void FaceDetectionWindow::tryLoadDefaultModel()
 {
+    LOG_NAMED_INFO(
+      "FaceDetectionWindow", "Attempting to load default model..."
+    );
+
     // Try to find and load a default model
     std::string defaultModelPath =
       ModelValidator::getDefaultModelPath(true); // Prefer DNN models
 
     if (defaultModelPath.empty())
     {
+        LOG_NAMED_INFO(
+          "FaceDetectionWindow", "No DNN model found, trying cascade models..."
+        );
         // Try without DNN preference
         defaultModelPath = ModelValidator::getDefaultModelPath(false);
     }
 
     if (!defaultModelPath.empty())
     {
+        LOG_NAMED_INFO(
+          "FaceDetectionWindow",
+          std::format("Found potential default model: {}", defaultModelPath)
+        );
+
         // Validate the default model
         ValidationResult validation =
           ModelValidator::validateModel(defaultModelPath);
         if (validation.isValid)
         {
+            LOG_NAMED_INFO(
+              "FaceDetectionWindow",
+              "Model validation successful, creating detector..."
+            );
+
             // Try to create and load the detector
             auto detector =
               FaceDetectorFactory::createOptimizedDetector(defaultModelPath);
@@ -981,6 +998,13 @@ void FaceDetectionWindow::tryLoadDefaultModel()
                   QFileInfo(m_modelPath).fileName()
                 );
 
+                LOG_NAMED_INFO(
+                  "FaceDetectionWindow",
+                  std::format(
+                    "Successfully loaded default model: {}", defaultModelPath
+                  )
+                );
+
                 // Show warning if there was one during validation
                 if (!validation.warningMessage.empty())
                 {
@@ -993,13 +1017,41 @@ void FaceDetectionWindow::tryLoadDefaultModel()
                 }
                 return;
             }
+            else
+            {
+                LOG_NAMED_ERROR(
+                  "FaceDetectionWindow",
+                  std::format(
+                    "Failed to create detector for default model: {}",
+                    defaultModelPath
+                  )
+                );
+            }
         }
+        else
+        {
+            LOG_NAMED_ERROR(
+              "FaceDetectionWindow",
+              std::format(
+                "Default model validation failed: {} - {}",
+                defaultModelPath,
+                validation.errorMessage
+              )
+            );
+        }
+    }
+    else
+    {
+        LOG_NAMED_WARNING(
+          "FaceDetectionWindow", "No default model found in any search paths"
+        );
     }
 
     // If we get here, no default model could be loaded
     statusBar()->showMessage(
       "No default model available - Load a model to get started"
     );
+    LOG_NAMED_INFO("FaceDetectionWindow", "No default model could be loaded");
 }
 
 void FaceDetectionWindow::onCudaToggled(bool enabled)
