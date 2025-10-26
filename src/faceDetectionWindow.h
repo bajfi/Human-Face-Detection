@@ -137,12 +137,15 @@ class FaceDetectionWindow : public QMainWindow
     void processFrame();
 
     /**
-     * @brief Performs face detection on the current loaded image
+     * @brief Toggles face detection on/off for camera and video processing
+     * @param enabled True to enable face detection, false to disable
      *
-     * Applies the selected face detection algorithm to the currently
-     * loaded static image and displays results with bounding boxes.
+     * When enabled, automatically detects faces in real-time camera/video
+     * frames. When disabled, displays frames without face detection processing.
+     * For static images, performs immediate face detection on the current
+     * image.
      */
-    void detectFaces();
+    void detectFaces(bool enabled);
 
     /**
      * @brief Handles CUDA acceleration toggle
@@ -351,6 +354,9 @@ class FaceDetectionWindow : public QMainWindow
 
     /// Flag indicating if a video file is currently loaded
     bool m_videoFileActive;
+
+    /// Flag indicating if face detection is enabled
+    bool m_faceDetectionEnabled;
 
     /// Path to the currently loaded detection model
     QString m_modelPath;

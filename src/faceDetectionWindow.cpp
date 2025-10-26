@@ -15,6 +15,7 @@ FaceDetectionWindow::FaceDetectionWindow(QWidget* parent)
     m_cameraActive(false),
     m_videoProcessingActive(false),
     m_videoFileActive(false),
+    m_faceDetectionEnabled(false),
     m_cameraTimer(new QTimer(this)),
     m_performanceUpdateTimer(new QTimer(this)),
     m_currentDetectorType(FaceDetectorFactory::DetectorType::UNKNOWN),
@@ -99,7 +100,9 @@ void FaceDetectionWindow::setupUI()
     m_loadModelButton = new QPushButton("Load Model", this);
     m_startCameraButton = new QPushButton("Start Camera", this);
     m_stopCameraButton = new QPushButton("Stop Camera", this);
-    m_detectButton = new QPushButton("Detect Faces", this);
+    m_detectButton = new QPushButton("Enable Detection", this);
+    m_detectButton->setCheckable(true);
+    m_detectButton->setChecked(m_faceDetectionEnabled);
     m_videoProcessingButton = new QPushButton("Enhanced Video", this);
     m_performanceButton = new QPushButton("Performance", this);
     m_configButton = new QPushButton("Config", this);
@@ -118,6 +121,9 @@ void FaceDetectionWindow::setupUI()
     }
 
     m_stopCameraButton->setEnabled(false);
+    m_detectButton->setToolTip(
+      "Toggle face detection on/off for real-time processing"
+    );
     m_videoProcessingButton->setToolTip(
       "Enable enhanced video processing with GPU acceleration"
     );
@@ -209,7 +215,7 @@ void FaceDetectionWindow::setupUI()
     );
     connect(
       m_detectButton,
-      &QPushButton::clicked,
+      &QPushButton::toggled,
       this,
       &FaceDetectionWindow::detectFaces
     );
@@ -486,11 +492,10 @@ void FaceDetectionWindow::startCamera()
         double videoFps = m_videoCapture.get(cv::CAP_PROP_FPS);
         int timerInterval = 33; // Default ~30 FPS
 
-        if (videoFps > 0 && videoFps <= 60)
+        if (videoFps > 0)
         {
-            // Calculate interval based on video FPS, but cap at 60 FPS for
-            // performance
-            timerInterval = static_cast<int>(1000.0 / std::min(videoFps, 30.0));
+            // Calculate timer interval based on video FPS
+            timerInterval = static_cast<int>(1000.0 / std::max(videoFps, 30.0));
         }
 
         m_cameraTimer->start(timerInterval);
@@ -530,7 +535,11 @@ void FaceDetectionWindow::startCamera()
     m_camera.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
 
     m_cameraActive = true;
-    m_cameraTimer->start(30); // 30ms interval (~33 FPS)
+    // Set the timer interval based on camera FPS
+    double cameraFps = m_camera.get(cv::CAP_PROP_FPS);
+    m_cameraTimer->start(
+      static_cast<int>(1000.0 / std::max(cameraFps, 30.0))
+    ); // 30ms interval (~33 FPS)
 
     // Reset performance monitoring for new camera session
     if (m_performanceMonitor)
@@ -633,11 +642,18 @@ void FaceDetectionWindow::processFrame()
         // Record face detection start time
         auto detectionStartTime = std::chrono::high_resolution_clock::now();
 
-        // Automatically detect faces in camera/video mode
-        cv::Mat processedFrame = detectFacesInImage(frame);
+        cv::Mat processedFrame(frame.clone());
 
-        // Calculate detection metrics if we have a detector
-        if (m_faceDetector && m_faceDetector->isLoaded())
+        // Only detect faces if detection is enabled
+        if (m_faceDetectionEnabled)
+        {
+            processedFrame = detectFacesInImage(frame);
+        }
+
+        // Calculate detection metrics if we have a detector and detection is
+        // enabled
+        if (m_faceDetectionEnabled && m_faceDetector &&
+            m_faceDetector->isLoaded())
         {
             std::vector<DetectionResult> detections =
               m_faceDetector->detectFaces(frame);
@@ -690,12 +706,16 @@ void FaceDetectionWindow::processFrame()
               static_cast<int>(m_videoCapture.get(cv::CAP_PROP_FRAME_COUNT));
             double videoFps = m_videoCapture.get(cv::CAP_PROP_FPS);
 
-            QString videoStatus =
-              QString("Video: Frame %1/%2 (FPS: %3) - %4 face(s) detected")
-                .arg(currentFrame)
-                .arg(totalFrames)
-                .arg(QString::number(videoFps, 'f', 1))
-                .arg(detectionCount);
+            QString detectionStatus =
+              m_faceDetectionEnabled
+                ? QString("%1 face(s) detected").arg(detectionCount)
+                : "detection disabled";
+
+            QString videoStatus = QString("Video: Frame %1/%2 (FPS: %3) - %4")
+                                    .arg(currentFrame)
+                                    .arg(totalFrames)
+                                    .arg(QString::number(videoFps, 'f', 1))
+                                    .arg(detectionStatus);
 
             statusBar()->showMessage(videoStatus);
         }
@@ -705,8 +725,10 @@ void FaceDetectionWindow::processFrame()
     }
 }
 
-void FaceDetectionWindow::detectFaces()
+void FaceDetectionWindow::detectFaces(bool enabled)
 {
+    m_faceDetectionEnabled = enabled;
+
     if (m_currentImage.empty())
     {
         showError(
@@ -723,6 +745,31 @@ void FaceDetectionWindow::detectFaces()
         return;
     }
 
+    // Update button text based on state
+    if (enabled)
+    {
+        m_detectButton->setText("Disable Detection");
+        m_detectButton->setStyleSheet(
+          "QPushButton { background-color: #FFB6C1; }"
+        ); // Light pink
+        statusBar()->showMessage("Face detection enabled");
+    }
+    else
+    {
+        m_detectButton->setText("Enable Detection");
+        m_detectButton->setStyleSheet(
+          "QPushButton { background-color: #90EE90; }"
+        ); // Light green
+        statusBar()->showMessage("Face detection disabled");
+    }
+
+    // If detection is disabled, just display the original image
+    if (!enabled)
+    {
+        updateImageDisplay(m_currentImage);
+        return;
+    }
+
     m_progressBar->setVisible(true);
     m_progressBar->setRange(0, 0); // Indeterminate progress
 
@@ -734,7 +781,18 @@ void FaceDetectionWindow::detectFaces()
 
 cv::Mat FaceDetectionWindow::detectFacesInImage(const cv::Mat& image)
 {
-    if (image.empty() || !m_faceDetector || !m_faceDetector->isLoaded())
+    if (image.empty())
+    {
+        return image;
+    }
+
+    // If face detection is disabled, return the original image
+    if (!m_faceDetectionEnabled)
+    {
+        return image.clone();
+    }
+
+    if (!m_faceDetector || !m_faceDetector->isLoaded())
     {
         return image;
     }
