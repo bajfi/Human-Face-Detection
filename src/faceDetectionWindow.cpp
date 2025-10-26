@@ -11,7 +11,7 @@
 
 FaceDetectionWindow::FaceDetectionWindow(QWidget* parent)
   : QMainWindow(parent),
-    m_centralWidget(nullptr),
+    ui(new Ui::FaceDetectionWindow),
     m_cameraActive(false),
     m_videoProcessingActive(false),
     m_videoFileActive(false),
@@ -82,166 +82,90 @@ FaceDetectionWindow::~FaceDetectionWindow()
     {
         m_camera.release();
     }
+
+    // Clean up UI
+    delete ui;
+
     LOG_NAMED_INFO("FaceDetectionWindow", "Application exiting.");
 }
 
 void FaceDetectionWindow::setupUI()
 {
-    m_centralWidget = new QWidget(this);
-    setCentralWidget(m_centralWidget);
+    // Setup UI from the .ui file
+    ui->setupUi(this);
 
-    m_mainLayout = new QVBoxLayout(m_centralWidget);
-
-    // Control group
-    m_controlGroup = new QGroupBox("Controls", this);
-    m_buttonLayout = new QHBoxLayout(m_controlGroup);
-
-    m_loadFileButton = new QPushButton("Load File", this);
-    m_loadModelButton = new QPushButton("Load Model", this);
-    m_startCameraButton = new QPushButton("Start Camera", this);
-    m_stopCameraButton = new QPushButton("Stop Camera", this);
-    m_detectButton = new QPushButton("Enable Detection", this);
-    m_detectButton->setCheckable(true);
-    m_detectButton->setChecked(m_faceDetectionEnabled);
-    m_videoProcessingButton = new QPushButton("Enhanced Video", this);
-    m_performanceButton = new QPushButton("Performance", this);
-    m_configButton = new QPushButton("Config", this);
-
-    // CUDA acceleration checkbox
-    m_cudaCheckBox = new QCheckBox("Enable CUDA Acceleration", this);
+    // Configure CUDA checkbox based on availability
     bool cudaAvailable = YunetFaceDetector::isCudaAvailable() ||
                          CascadeFaceDetector::isCudaAvailable();
-    m_cudaCheckBox->setChecked(cudaAvailable);
-    m_cudaCheckBox->setEnabled(cudaAvailable);
+    ui->cudaCheckBox->setChecked(cudaAvailable);
+    ui->cudaCheckBox->setEnabled(cudaAvailable);
     if (!cudaAvailable)
     {
-        m_cudaCheckBox->setToolTip(
+        ui->cudaCheckBox->setToolTip(
           "CUDA acceleration is not available on this system"
         );
     }
 
-    m_stopCameraButton->setEnabled(false);
-    m_detectButton->setToolTip(
-      "Toggle face detection on/off for real-time processing"
-    );
-    m_videoProcessingButton->setToolTip(
-      "Enable enhanced video processing with GPU acceleration"
-    );
-    m_performanceButton->setToolTip("View real-time performance metrics");
-    m_configButton->setToolTip("Configure detection profiles and settings");
+    // Set initial states
+    ui->stopCameraButton->setEnabled(false);
+    ui->detectButton->setCheckable(true);
+    ui->detectButton->setChecked(m_faceDetectionEnabled);
+    ui->progressBar->setVisible(false);
 
-    m_buttonLayout->addWidget(m_loadFileButton);
-    m_buttonLayout->addWidget(m_loadModelButton);
-    m_buttonLayout->addWidget(m_startCameraButton);
-    m_buttonLayout->addWidget(m_stopCameraButton);
-    m_buttonLayout->addWidget(m_detectButton);
-    m_buttonLayout->addWidget(m_videoProcessingButton);
-    m_buttonLayout->addWidget(m_performanceButton);
-    m_buttonLayout->addWidget(m_configButton);
-    m_buttonLayout->addWidget(m_cudaCheckBox);
-    m_buttonLayout->addStretch();
-
-    // Display group
-    m_displayGroup = new QGroupBox("Image Display", this);
-    QVBoxLayout* displayLayout = new QVBoxLayout(m_displayGroup);
-
-    m_imageLabel = new QLabel(this);
-    m_imageLabel->setAlignment(Qt::AlignCenter);
-    m_imageLabel->setMinimumSize(640, 480);
-    m_imageLabel->setStyleSheet(
-      "QLabel { border: 1px solid gray; background-color: #f0f0f0; }"
-    );
-    m_imageLabel->setText("No image loaded");
-
-    displayLayout->addWidget(m_imageLabel);
-
-    // Status and progress
-    m_modelInfoLabel = new QLabel("Model: None loaded", this);
-    m_modelInfoLabel->setStyleSheet(
-      "QLabel { font-weight: bold; color: #666; }"
-    );
-
-    m_performanceLabel = new QLabel("Performance: Ready", this);
-    m_performanceLabel->setStyleSheet(
-      "QLabel { font-weight: bold; color: #006600; }"
-    );
-
-    m_fpsLabel = new QLabel("FPS: 0.0", this);
-    m_fpsLabel->setStyleSheet("QLabel { font-weight: bold; color: #0066CC; }");
-
-    m_progressBar = new QProgressBar(this);
-    m_progressBar->setVisible(false);
-
-    // Add all to main layout
-    m_mainLayout->addWidget(m_controlGroup);
-    m_mainLayout->addWidget(m_displayGroup);
-
-    // Status layout
-    QHBoxLayout* statusLayout = new QHBoxLayout();
-    statusLayout->addWidget(m_modelInfoLabel);
-    statusLayout->addStretch();
-    statusLayout->addWidget(m_performanceLabel);
-    statusLayout->addWidget(m_fpsLabel);
-
-    QWidget* statusWidget = new QWidget(this);
-    statusWidget->setLayout(statusLayout);
-    m_mainLayout->addWidget(statusWidget);
-    m_mainLayout->addWidget(m_progressBar);
-
-    // Connect signals
+    // Connect signals to slots
     connect(
-      m_loadFileButton,
+      ui->loadFileButton,
       &QPushButton::clicked,
       this,
       &FaceDetectionWindow::loadFile
     );
     connect(
-      m_loadModelButton,
+      ui->loadModelButton,
       &QPushButton::clicked,
       this,
       &FaceDetectionWindow::loadModel
     );
     connect(
-      m_startCameraButton,
+      ui->startCameraButton,
       &QPushButton::clicked,
       this,
       &FaceDetectionWindow::startCamera
     );
     connect(
-      m_stopCameraButton,
+      ui->stopCameraButton,
       &QPushButton::clicked,
       this,
       &FaceDetectionWindow::stopCamera
     );
     connect(
-      m_detectButton,
+      ui->detectButton,
       &QPushButton::toggled,
       this,
       &FaceDetectionWindow::detectFaces
     );
     connect(
-      m_cudaCheckBox,
+      ui->cudaCheckBox,
       &QCheckBox::toggled,
       this,
       &FaceDetectionWindow::onCudaToggled
     );
     connect(
-      m_videoProcessingButton,
-      &QPushButton::clicked,
-      this,
-      &FaceDetectionWindow::toggleVideoEnhancement
-    );
-    connect(
-      m_performanceButton,
+      ui->performanceButton,
       &QPushButton::clicked,
       this,
       &FaceDetectionWindow::showPerformanceDialog
     );
     connect(
-      m_configButton,
+      ui->configButton,
       &QPushButton::clicked,
       this,
       &FaceDetectionWindow::showConfigDialog
+    );
+    connect(
+      ui->videoProcessingButton,
+      &QPushButton::clicked,
+      this,
+      &FaceDetectionWindow::toggleVideoEnhancement
     );
 }
 
@@ -255,8 +179,8 @@ void FaceDetectionWindow::loadModel()
 
     if (!fileName.isEmpty())
     {
-        m_progressBar->setVisible(true);
-        m_progressBar->setRange(0, 0); // Indeterminate progress
+        ui->progressBar->setVisible(true);
+        ui->progressBar->setRange(0, 0); // Indeterminate progress
 
         std::string modelPath = fileName.toStdString();
 
@@ -264,7 +188,7 @@ void FaceDetectionWindow::loadModel()
         ValidationResult validation = ModelValidator::validateModel(modelPath);
         if (!validation.isValid)
         {
-            m_progressBar->setVisible(false);
+            ui->progressBar->setVisible(false);
             showError(
               "Model validation failed: " +
               QString::fromStdString(validation.errorMessage)
@@ -291,7 +215,7 @@ void FaceDetectionWindow::loadModel()
         // Check if model format is supported
         if (!FaceDetectorFactory::isModelSupported(modelPath))
         {
-            m_progressBar->setVisible(false);
+            ui->progressBar->setVisible(false);
             showError("Unsupported model format: " + fileName);
             return;
         }
@@ -301,7 +225,7 @@ void FaceDetectionWindow::loadModel()
 
         if (!detector)
         {
-            m_progressBar->setVisible(false);
+            ui->progressBar->setVisible(false);
             showError(
               "Failed to create detector for: " + fileName +
               "\nPlease ensure the model file is valid and OpenCV DNN module "
@@ -321,7 +245,7 @@ void FaceDetectionWindow::loadModel()
 
         updateModelInfo();
 
-        m_progressBar->setVisible(false);
+        ui->progressBar->setVisible(false);
         statusBar()->showMessage(
           "Model loaded: " + QFileInfo(fileName).filePath()
         );
@@ -366,6 +290,14 @@ void FaceDetectionWindow::loadFile()
               "FaceDetectionWindow",
               std::format("Loading image: {}", fileName.toStdString())
             );
+
+            // Disable the video file UI components
+            m_videoFileActive = false;
+            ui->startCameraButton->setEnabled(false);
+            ui->stopCameraButton->setEnabled(false);
+            ui->performanceButton->setEnabled(false);
+            ui->videoProcessingButton->setEnabled(false);
+
             m_currentImage = cv::imread(fileName.toStdString());
 
             if (m_currentImage.empty())
@@ -428,6 +360,11 @@ void FaceDetectionWindow::loadVideoFile(const QString& fileName)
     m_currentVideoPath = fileName;
     m_videoFileActive = true;
 
+    // Enable video processing UI elements
+    ui->startCameraButton->setEnabled(true);
+    ui->performanceButton->setEnabled(true);
+    ui->videoProcessingButton->setEnabled(true);
+
     // Load first frame
     cv::Mat firstFrame;
     if (m_videoCapture.read(firstFrame))
@@ -448,12 +385,12 @@ void FaceDetectionWindow::loadVideoFile(const QString& fileName)
         m_videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
 
         // Update UI to show video controls
-        if (m_startCameraButton && m_stopCameraButton)
+        if (ui->startCameraButton && ui->stopCameraButton)
         {
-            m_startCameraButton->setText("Play Video");
-            m_stopCameraButton->setText("Stop Video");
-            m_startCameraButton->setEnabled(true);
-            m_stopCameraButton->setEnabled(false);
+            ui->startCameraButton->setText("Play Video");
+            ui->stopCameraButton->setText("Stop Video");
+            ui->startCameraButton->setEnabled(true);
+            ui->stopCameraButton->setEnabled(false);
         }
 
         QMessageBox::information(
@@ -508,10 +445,10 @@ void FaceDetectionWindow::startCamera()
         m_frameCount = 0;
         m_lastFrameTime = std::chrono::high_resolution_clock::now();
 
-        m_startCameraButton->setEnabled(false);
-        m_stopCameraButton->setEnabled(true);
-        m_startCameraButton->setText("Play Video");
-        m_stopCameraButton->setText("Stop Video");
+        ui->startCameraButton->setEnabled(false);
+        ui->stopCameraButton->setEnabled(true);
+        ui->startCameraButton->setText("Play Video");
+        ui->stopCameraButton->setText("Stop Video");
 
         statusBar()->showMessage(
           QString("Video playback started (Target FPS: %1)")
@@ -549,8 +486,8 @@ void FaceDetectionWindow::startCamera()
     m_frameCount = 0;
     m_lastFrameTime = std::chrono::high_resolution_clock::now();
 
-    m_startCameraButton->setEnabled(false);
-    m_stopCameraButton->setEnabled(true);
+    ui->startCameraButton->setEnabled(false);
+    ui->stopCameraButton->setEnabled(true);
 
     statusBar()->showMessage("Camera started");
 }
@@ -572,19 +509,19 @@ void FaceDetectionWindow::stopCamera()
     // Keep video file loaded but stop playback
     // Don't release m_videoCapture so user can restart playback
 
-    m_startCameraButton->setEnabled(true);
-    m_stopCameraButton->setEnabled(false);
+    ui->startCameraButton->setEnabled(true);
+    ui->stopCameraButton->setEnabled(false);
 
     if (m_videoFileActive)
     {
-        m_startCameraButton->setText("Play Video");
-        m_stopCameraButton->setText("Stop Video");
+        ui->startCameraButton->setText("Play Video");
+        ui->stopCameraButton->setText("Stop Video");
         statusBar()->showMessage("Video playback stopped");
     }
     else
     {
-        m_startCameraButton->setText("Start Camera");
-        m_stopCameraButton->setText("Stop Camera");
+        ui->startCameraButton->setText("Start Camera");
+        ui->stopCameraButton->setText("Stop Camera");
         statusBar()->showMessage("Camera stopped");
     }
 }
@@ -748,16 +685,16 @@ void FaceDetectionWindow::detectFaces(bool enabled)
     // Update button text based on state
     if (enabled)
     {
-        m_detectButton->setText("Disable Detection");
-        m_detectButton->setStyleSheet(
+        ui->detectButton->setText("Disable Detection");
+        ui->detectButton->setStyleSheet(
           "QPushButton { background-color: #FFB6C1; }"
         ); // Light pink
         statusBar()->showMessage("Face detection enabled");
     }
     else
     {
-        m_detectButton->setText("Enable Detection");
-        m_detectButton->setStyleSheet(
+        ui->detectButton->setText("Enable Detection");
+        ui->detectButton->setStyleSheet(
           "QPushButton { background-color: #90EE90; }"
         ); // Light green
         statusBar()->showMessage("Face detection disabled");
@@ -770,13 +707,13 @@ void FaceDetectionWindow::detectFaces(bool enabled)
         return;
     }
 
-    m_progressBar->setVisible(true);
-    m_progressBar->setRange(0, 0); // Indeterminate progress
+    ui->progressBar->setVisible(true);
+    ui->progressBar->setRange(0, 0); // Indeterminate progress
 
     cv::Mat result = detectFacesInImage(m_currentImage);
     updateImageDisplay(result);
 
-    m_progressBar->setVisible(false);
+    ui->progressBar->setVisible(false);
 }
 
 cv::Mat FaceDetectionWindow::detectFacesInImage(const cv::Mat& image)
@@ -928,11 +865,11 @@ void FaceDetectionWindow::updateImageDisplay(const cv::Mat& image)
 
     // Scale image to fit label while maintaining aspect ratio
     QPixmap pixmap = QPixmap::fromImage(qimg);
-    QSize labelSize = m_imageLabel->size();
+    QSize labelSize = ui->imageLabel->size();
     pixmap =
       pixmap.scaled(labelSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    m_imageLabel->setPixmap(pixmap);
+    ui->imageLabel->setPixmap(pixmap);
 }
 
 void FaceDetectionWindow::showError(const QString& message)
@@ -947,7 +884,7 @@ void FaceDetectionWindow::updateModelInfo()
 {
     if (!m_faceDetector || !m_faceDetector->isLoaded())
     {
-        m_modelInfoLabel->setText("Model: None loaded");
+        ui->modelInfoLabel->setText("Model: None loaded");
         LOG_NAMED_WARNING("FaceDetectionWindow", "No model loaded.");
         return;
     }
@@ -969,10 +906,10 @@ void FaceDetectionWindow::updateModelInfo()
         break;
     }
 
-    m_modelInfoLabel->setText(QString("Model: %1 (%2) - %3")
-                                .arg(fileInfo.fileName())
-                                .arg(detectorType)
-                                .arg(fileInfo.suffix().toUpper()));
+    ui->modelInfoLabel->setText(QString("Model: %1 (%2) - %3")
+                                  .arg(fileInfo.fileName())
+                                  .arg(detectorType)
+                                  .arg(fileInfo.suffix().toUpper()));
 }
 
 QString FaceDetectionWindow::getModelFilterString() const
@@ -1146,7 +1083,7 @@ void FaceDetectionWindow::onCudaToggled(bool enabled)
     if (!success && enabled)
     {
         // CUDA enable failed, revert checkbox
-        m_cudaCheckBox->setChecked(false);
+        ui->cudaCheckBox->setChecked(false);
         QMessageBox::warning(
           this,
           "CUDA Error",
@@ -1202,7 +1139,7 @@ void FaceDetectionWindow::toggleVideoEnhancement()
             VideoFaceDetector::ProcessingConfig config =
               VideoFaceDetector::getRecommendedConfig(true); // prioritize speed
 
-            if (m_cudaCheckBox->isChecked())
+            if (ui->cudaCheckBox->isChecked())
             {
                 config.gpuAcceleration = true;
             }
@@ -1220,8 +1157,8 @@ void FaceDetectionWindow::toggleVideoEnhancement()
         }
 
         m_videoProcessingActive = true;
-        m_videoProcessingButton->setText("Stop Enhanced");
-        m_videoProcessingButton->setStyleSheet(
+        ui->videoProcessingButton->setText("Stop Enhanced");
+        ui->videoProcessingButton->setStyleSheet(
           "QPushButton { background-color: #ff6b6b; }"
         );
         statusBar()->showMessage("Enhanced video processing started");
@@ -1235,8 +1172,8 @@ void FaceDetectionWindow::toggleVideoEnhancement()
         }
 
         m_videoProcessingActive = false;
-        m_videoProcessingButton->setText("Enhanced Video");
-        m_videoProcessingButton->setStyleSheet("");
+        ui->videoProcessingButton->setText("Enhanced Video");
+        ui->videoProcessingButton->setStyleSheet("");
         statusBar()->showMessage("Enhanced video processing stopped");
     }
 }
@@ -1357,8 +1294,8 @@ void FaceDetectionWindow::showPerformanceDialog()
               QString::number(stats.gpuMemoryUsed / (1024.0 * 1024.0), 'f', 1)
             )
             .arg(
-              m_cudaCheckBox && m_cudaCheckBox->isChecked() ? "Enabled"
-                                                            : "Disabled"
+              ui->cudaCheckBox && ui->cudaCheckBox->isChecked() ? "Enabled"
+                                                                : "Disabled"
             )
             .arg(stats.currentResolution.width)
             .arg(stats.currentResolution.height)
@@ -1624,7 +1561,7 @@ void FaceDetectionWindow::updatePerformanceDisplay()
     }
 
     // Update FPS display with real-time calculation
-    m_fpsLabel->setText(QString("FPS: %1").arg(realTimeFPS, 0, 'f', 1));
+    ui->fpsLabel->setText(QString("FPS: %1").arg(realTimeFPS, 0, 'f', 1));
 
     // Update performance status with color coding
     float healthScore = m_performanceMonitor->getPerformanceHealthScore();
@@ -1667,8 +1604,8 @@ void FaceDetectionWindow::updatePerformanceDisplay()
         performanceText = QString("Performance: %1").arg(status);
     }
 
-    m_performanceLabel->setText(performanceText);
-    m_performanceLabel->setStyleSheet(
+    ui->performanceLabel->setText(performanceText);
+    ui->performanceLabel->setStyleSheet(
       QString("QLabel { font-weight: bold; color: %1; }").arg(color)
     );
 

@@ -48,6 +48,7 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     src/faceDetectionWindow.cpp
     src/faceDetectionWindow.h
+    src/faceDetectionWindow.ui
     src/IFaceDetector.h
     src/CascadeFaceDetector.cpp
     src/CascadeFaceDetector.h

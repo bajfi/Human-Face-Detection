@@ -28,6 +28,8 @@
 #include <QComboBox>
 #include <QDateTime>
 
+#include "ui_faceDetectionWindow.h"
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
@@ -278,38 +280,8 @@ class FaceDetectionWindow : public QMainWindow
 
     // ===== UI Components =====
 
-    /// Main central widget containing all UI elements
-    QWidget* m_centralWidget;
-
-    /// Primary vertical layout for the main window
-    QVBoxLayout* m_mainLayout;
-
-    /// Horizontal layout for control buttons
-    QHBoxLayout* m_buttonLayout;
-
-    /// Group box containing control elements
-    QGroupBox* m_controlGroup;
-
-    /// Group box containing display elements
-    QGroupBox* m_displayGroup;
-
-    // Control Buttons
-    QPushButton* m_loadFileButton;    ///< Button to load image/video files
-    QPushButton* m_loadModelButton;   ///< Button to load detection models
-    QPushButton* m_startCameraButton; ///< Button to start camera capture
-    QPushButton* m_stopCameraButton;  ///< Button to stop camera capture
-    QPushButton* m_detectButton;      ///< Button to perform face detection
-    QCheckBox* m_cudaCheckBox; ///< Checkbox to enable/disable CUDA acceleration
-    QPushButton* m_performanceButton; ///< Button to show performance dialog
-    QPushButton* m_configButton;      ///< Button to show configuration dialog
-    QPushButton* m_videoProcessingButton; ///< Button to toggle video processing
-
-    // Display Elements
-    QLabel* m_imageLabel;        ///< Primary image display area
-    QLabel* m_modelInfoLabel;    ///< Display for current model information
-    QLabel* m_performanceLabel;  ///< Display for performance metrics
-    QLabel* m_fpsLabel;          ///< Display for frames per second
-    QProgressBar* m_progressBar; ///< Progress indicator for operations
+    /// UI object containing all the widgets defined in the .ui file
+    Ui::FaceDetectionWindow* ui;
 
     // ===== OpenCV Components =====
 
